@@ -92,17 +92,6 @@ input:disabled {
   color: #6b7280;
 }
 
-input.error {
-  border-color: #dc2626;
-}
-
-.error-text {
-  font-size: 11px;
-  color: #dc2626;
-  margin-top: 4px;
-  display: none;
-}
-
 .grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -124,6 +113,11 @@ button {
 button.secondary {
   background: #1f3a5f;
   color: white;
+}
+
+button.secondary:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
 }
 
 button.ghost {
@@ -197,25 +191,15 @@ button.ghost {
   <!-- Map link -->
   <div class="section" id="linkSection">
     <label>Google Maps Link</label>
-    <input id="mapLink" placeholder="Paste any maps link">
+    <input id="mapLink" placeholder="Paste maps link">
   </div>
 
   <!-- Lat/Lon -->
   <div class="section hidden" id="latlonSection">
     <label>Latitude & Longitude</label>
     <div class="grid">
-      <div>
-        <input id="lat" placeholder="Latitude">
-        <div class="error-text" id="latError">
-          Latitude must be between -90 and 90
-        </div>
-      </div>
-      <div>
-        <input id="lon" placeholder="Longitude">
-        <div class="error-text" id="lonError">
-          Longitude must be between -180 and 180
-        </div>
-      </div>
+      <input id="lat" placeholder="Latitude" type="number">
+      <input id="lon" placeholder="Longitude" type="number">
     </div>
   </div>
 
@@ -223,7 +207,7 @@ button.ghost {
 
   <!-- Confirm -->
   <div class="section hidden" id="confirmSection">
-    <label>Generated / Used Link</label>
+    <label>Used Link</label>
     <div class="link-box" id="generatedLink"></div>
 
     <button class="secondary" onclick="generateQR()">Generate QR</button>
@@ -236,8 +220,14 @@ button.ghost {
       <div id="qrPreview"></div>
     </div>
 
+    <!-- Ask filename AFTER QR -->
     <div class="download">
-      <button class="secondary" onclick="downloadPNG()">Download PNG</button>
+      <label>File name</label>
+      <input id="fileName" placeholder="Site Name / Client Name" oninput="toggleDownload()">
+
+      <button id="downloadBtn" class="secondary" onclick="downloadPNG()" disabled>
+        Download PNG
+      </button>
     </div>
   </div>
 
@@ -260,44 +250,16 @@ function selectType(type) {
 
   document.getElementById("linkSection").classList.toggle("hidden", type !== "link");
   document.getElementById("latlonSection").classList.toggle("hidden", type !== "latlon");
-
-  clearErrors();
-}
-
-function clearErrors() {
-  ["lat","lon"].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.classList.remove("error");
-  });
-  ["latError","lonError"].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.style.display = "none";
-  });
 }
 
 function previewLocation() {
-  clearErrors();
-
   if (selectedType === "link") {
     finalLink = document.getElementById("mapLink").value.trim();
     if (!finalLink) return;
   } else {
-    const lat = parseFloat(document.getElementById("lat").value);
-    const lon = parseFloat(document.getElementById("lon").value);
-    let valid = true;
-
-    if (isNaN(lat) || lat < -90 || lat > 90) {
-      document.getElementById("lat").classList.add("error");
-      document.getElementById("latError").style.display = "block";
-      valid = false;
-    }
-    if (isNaN(lon) || lon < -180 || lon > 180) {
-      document.getElementById("lon").classList.add("error");
-      document.getElementById("lonError").style.display = "block";
-      valid = false;
-    }
-    if (!valid) return;
-
+    const lat = document.getElementById("lat").value.trim();
+    const lon = document.getElementById("lon").value.trim();
+    if (!lat || !lon) return;
     finalLink = `https://www.google.com/maps?q=${lat},${lon}`;
   }
 
@@ -328,6 +290,11 @@ function generateQR() {
   }, 300);
 }
 
+function toggleDownload() {
+  const name = document.getElementById("fileName").value.trim();
+  document.getElementById("downloadBtn").disabled = !name;
+}
+
 function editLocation() {
   lockInputs(false);
   document.getElementById("confirmSection").classList.add("hidden");
@@ -347,9 +314,12 @@ function lockInputs(lock) {
 
 function downloadPNG() {
   if (!currentImg) return;
+  const name = document.getElementById("fileName").value.trim();
+  if (!name) return;
+
   const a = document.createElement("a");
   a.href = currentImg.src;
-  a.download = "location-qr.png";
+  a.download = name + ".png";
   a.click();
 }
 </script>

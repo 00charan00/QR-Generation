@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>QR Generator</title>
+
+  <!-- QR Libraries -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #0f172a;
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .card {
+      background: #020617;
+      padding: 25px;
+      border-radius: 12px;
+      width: 350px;
+      box-shadow: 0 0 25px rgba(0,0,0,0.6);
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    input, button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      border-radius: 6px;
+      border: none;
+      font-size: 14px;
+    }
+
+    input {
+      background: #0f172a;
+      color: white;
+    }
+
+    button {
+      background: #22c55e;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #16a34a;
+    }
+
+    #qrPreview {
+      margin-top: 20px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <h2>QR Code Generator</h2>
+
+  <input id="link" placeholder="Enter link" />
+  <input id="filename" placeholder="Enter file name" />
+
+  <button onclick="generateQR()">Generate & Download</button>
+
+  <div id="qrPreview"></div>
+</div>
+
+<script>
+function generateQR() {
+  const link = document.getElementById("link").value.trim();
+  const name = document.getElementById("filename").value.trim();
+
+  if (!link || !name) {
+    alert("Fill all fields");
+    return;
+  }
+
+  const folder = "QR-Codes";
+  const pngPath = `${folder}/${name}.png`;
+  const svgPath = `${folder}/${name}.svg`;
+
+  // Clear preview
+  document.getElementById("qrPreview").innerHTML = "";
+
+  // PNG
+  QRCode.toCanvas(link, { width: 300 }, (err, canvas) => {
+    if (err) return console.error(err);
+    document.getElementById("qrPreview").appendChild(canvas);
+
+    const pngLink = document.createElement("a");
+    pngLink.href = canvas.toDataURL("image/png");
+    pngLink.download = pngPath;
+    pngLink.click();
+  });
+
+  // SVG
+  QRCode.toString(link, { type: "svg" }, (err, svg) => {
+    if (err) return console.error(err);
+
+    const blob = new Blob([svg], { type: "image/svg+xml" });
+    const url = URL.createObjectURL(blob);
+
+    const svgLink = document.createElement("a");
+    svgLink.href = url;
+    svgLink.download = svgPath;
+    svgLink.click();
+
+    URL.revokeObjectURL(url);
+  });
+}
+</script>
+
+</body>
+</html>

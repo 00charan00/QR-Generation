@@ -40,7 +40,7 @@ h2 { text-align: center; margin: 0; }
   margin-bottom: 18px;
 }
 
-/* ===== RADIO CARDS ===== */
+/* Radio cards */
 .radio-cards {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -53,12 +53,7 @@ h2 { text-align: center; margin: 0; }
   border-radius: 6px;
   padding: 14px;
   cursor: pointer;
-  font-size: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   text-align: center;
-  transition: all 0.2s ease;
   background: #f9fafb;
 }
 
@@ -73,7 +68,7 @@ h2 { text-align: center; margin: 0; }
   cursor: not-allowed;
 }
 
-/* ===== FORM ===== */
+/* Form */
 .section { margin-top: 18px; }
 
 label {
@@ -97,13 +92,24 @@ input:disabled {
   color: #6b7280;
 }
 
+input.error {
+  border-color: #dc2626;
+}
+
+.error-text {
+  font-size: 11px;
+  color: #dc2626;
+  margin-top: 4px;
+  display: none;
+}
+
 .grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
 }
 
-/* ===== BUTTONS ===== */
+/* Buttons */
 button {
   width: 100%;
   padding: 14px;
@@ -128,7 +134,29 @@ button.ghost {
 
 .hidden { display: none; }
 
-/* ===== INFO ===== */
+/* QR */
+.qr-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-top: 16px;
+}
+
+#qrPreview img {
+  background: white;
+  padding: 8px;
+  border: 1px solid #d1d5db;
+}
+
+/* Download */
+.download {
+  margin-top: 16px;
+  text-align: center;
+}
+
+@media (max-width: 768px) {
+  .download { display: none; }
+}
+
 .link-box {
   margin-top: 8px;
   padding: 10px;
@@ -136,12 +164,6 @@ button.ghost {
   border: 1px dashed #d1d5db;
   font-size: 12px;
   word-break: break-all;
-}
-
-#qrPreview img {
-  background: white;
-  padding: 8px;
-  border: 1px solid #d1d5db;
 }
 
 .note {
@@ -159,7 +181,7 @@ button.ghost {
   <h2>Location QR Generator</h2>
   <div class="subtitle">Preview → Confirm → Generate</div>
 
-  <!-- INPUT TYPE -->
+  <!-- Input type -->
   <div class="section">
     <label>Input Type</label>
     <div class="radio-cards">
@@ -172,36 +194,51 @@ button.ghost {
     </div>
   </div>
 
-  <!-- MAP LINK -->
+  <!-- Map link -->
   <div class="section" id="linkSection">
     <label>Google Maps Link</label>
-    <input id="mapLink" placeholder="https://maps.google.com/...">
+    <input id="mapLink" placeholder="Paste any maps link">
   </div>
 
-  <!-- LAT LON -->
+  <!-- Lat/Lon -->
   <div class="section hidden" id="latlonSection">
     <label>Latitude & Longitude</label>
     <div class="grid">
-      <input id="lat" placeholder="Latitude">
-      <input id="lon" placeholder="Longitude">
+      <div>
+        <input id="lat" placeholder="Latitude">
+        <div class="error-text" id="latError">
+          Latitude must be between -90 and 90
+        </div>
+      </div>
+      <div>
+        <input id="lon" placeholder="Longitude">
+        <div class="error-text" id="lonError">
+          Longitude must be between -180 and 180
+        </div>
+      </div>
     </div>
   </div>
 
-  <!-- STEP 1 -->
   <button id="previewBtn" onclick="previewLocation()">Preview Location</button>
 
-  <!-- CONFIRM -->
+  <!-- Confirm -->
   <div class="section hidden" id="confirmSection">
-    <label>Generated Google Maps Link</label>
+    <label>Generated / Used Link</label>
     <div class="link-box" id="generatedLink"></div>
 
-    <button class="secondary" onclick="generateQR()">Generate QR for this Location</button>
+    <button class="secondary" onclick="generateQR()">Generate QR</button>
     <button class="ghost" onclick="editLocation()">Edit Location</button>
   </div>
 
   <!-- QR -->
   <div class="section hidden" id="qrSection">
-    <div id="qrPreview"></div>
+    <div class="qr-wrapper">
+      <div id="qrPreview"></div>
+    </div>
+
+    <div class="download">
+      <button class="secondary" onclick="downloadPNG()">Download PNG</button>
+    </div>
   </div>
 
   <div class="note">
@@ -212,37 +249,60 @@ button.ghost {
 <script>
 let selectedType = "link";
 let finalLink = "";
+let currentImg = null;
 
 function selectType(type) {
   if (document.getElementById("mapLink").disabled) return;
 
   selectedType = type;
-
   document.getElementById("typeLink").classList.toggle("active", type === "link");
   document.getElementById("typeLatLon").classList.toggle("active", type === "latlon");
 
   document.getElementById("linkSection").classList.toggle("hidden", type !== "link");
   document.getElementById("latlonSection").classList.toggle("hidden", type !== "latlon");
+
+  clearErrors();
+}
+
+function clearErrors() {
+  ["lat","lon"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove("error");
+  });
+  ["latError","lonError"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = "none";
+  });
 }
 
 function previewLocation() {
+  clearErrors();
+
   if (selectedType === "link") {
     finalLink = document.getElementById("mapLink").value.trim();
+    if (!finalLink) return;
   } else {
-    const lat = document.getElementById("lat").value.trim();
-    const lon = document.getElementById("lon").value.trim();
-    if (!lat || !lon) return;
+    const lat = parseFloat(document.getElementById("lat").value);
+    const lon = parseFloat(document.getElementById("lon").value);
+    let valid = true;
+
+    if (isNaN(lat) || lat < -90 || lat > 90) {
+      document.getElementById("lat").classList.add("error");
+      document.getElementById("latError").style.display = "block";
+      valid = false;
+    }
+    if (isNaN(lon) || lon < -180 || lon > 180) {
+      document.getElementById("lon").classList.add("error");
+      document.getElementById("lonError").style.display = "block";
+      valid = false;
+    }
+    if (!valid) return;
+
     finalLink = `https://www.google.com/maps?q=${lat},${lon}`;
   }
 
-  if (!finalLink) return;
-
-  // Lock inputs
   lockInputs(true);
-
-  // Preview map
   window.open(finalLink, "_blank");
-
   document.getElementById("generatedLink").innerText = finalLink;
   document.getElementById("confirmSection").classList.remove("hidden");
 }
@@ -262,24 +322,35 @@ function generateQR() {
   });
 
   document.getElementById("qrSection").classList.remove("hidden");
+
+  setTimeout(() => {
+    currentImg = qrDiv.querySelector("img");
+  }, 300);
 }
 
 function editLocation() {
   lockInputs(false);
-
   document.getElementById("confirmSection").classList.add("hidden");
   document.getElementById("qrSection").classList.add("hidden");
   document.getElementById("qrPreview").innerHTML = "";
 }
 
 function lockInputs(lock) {
-  document.getElementById("mapLink").disabled = lock;
-  document.getElementById("lat").disabled = lock;
-  document.getElementById("lon").disabled = lock;
+  ["mapLink","lat","lon"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.disabled = lock;
+  });
   document.getElementById("previewBtn").disabled = lock;
-
   document.getElementById("typeLink").classList.toggle("disabled", lock);
   document.getElementById("typeLatLon").classList.toggle("disabled", lock);
+}
+
+function downloadPNG() {
+  if (!currentImg) return;
+  const a = document.createElement("a");
+  a.href = currentImg.src;
+  a.download = "location-qr.png";
+  a.click();
 }
 </script>
 

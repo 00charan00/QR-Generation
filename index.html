@@ -2,114 +2,111 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>QR Generator</title>
 
 <!-- QR Library -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
 <style>
-/* ===== RESET ===== */
 * {
   box-sizing: border-box;
 }
 
-/* ===== BASE ===== */
 body {
   margin: 0;
   min-height: 100vh;
   display: flex;
   justify-content: center;
   align-items: center;
-  background: #e5e7eb; /* concrete grey */
+  background: #e5e7eb;
   font-family: "Segoe UI", Arial, sans-serif;
   color: #111827;
 }
 
-/* ===== CARD ===== */
 .box {
   background: #ffffff;
-  width: 380px;
-  padding: 28px;
+  width: 100%;
+  max-width: 420px;
+  padding: 24px;
+  margin: 12px;
   border-radius: 6px;
-  border-top: 6px solid #1f3a5f; /* steel blue */
+  border-top: 6px solid #1f3a5f;
   box-shadow: 0 10px 30px rgba(0,0,0,0.15);
 }
 
-/* ===== HEADER ===== */
 .box h2 {
   margin: 0 0 6px 0;
   text-align: center;
   font-size: 20px;
-  letter-spacing: 0.5px;
 }
 
 .subtitle {
   text-align: center;
   font-size: 12px;
   color: #6b7280;
-  margin-bottom: 20px;
+  margin-bottom: 18px;
 }
 
-/* ===== FORM ===== */
 label {
   font-size: 12px;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.4px;
   color: #374151;
-  display: block;
   margin-top: 14px;
+  display: block;
 }
 
 input {
   width: 100%;
-  padding: 10px 12px;
+  padding: 12px;
   margin-top: 6px;
   font-size: 14px;
   border-radius: 4px;
   border: 1px solid #d1d5db;
-  outline: none;
 }
 
-input:focus {
-  border-color: #1f3a5f;
-}
-
-/* ===== BUTTON ===== */
 button {
-  margin-top: 20px;
   width: 100%;
-  padding: 12px;
-  background: #facc15; /* safety yellow */
+  padding: 14px;
+  margin-top: 16px;
+  background: #facc15;
   color: #111827;
   font-size: 14px;
   font-weight: 700;
-  letter-spacing: 0.5px;
   border: none;
   border-radius: 4px;
   cursor: pointer;
-  transition: background 0.2s ease;
 }
 
-button:hover {
-  background: #eab308;
+button.secondary {
+  background: #1f3a5f;
+  color: white;
 }
 
-/* ===== PREVIEW ===== */
 #preview {
-  margin-top: 24px;
+  margin-top: 20px;
   padding-top: 16px;
   border-top: 1px dashed #d1d5db;
   text-align: center;
 }
 
-#preview canvas {
+#preview img {
   background: white;
   padding: 8px;
   border: 1px solid #d1d5db;
 }
 
-/* ===== FOOTER NOTE ===== */
+.downloads {
+  display: none;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.downloads button {
+  flex: 1;
+}
+
 .note {
   margin-top: 14px;
   font-size: 11px;
@@ -125,22 +122,31 @@ button:hover {
   <h2>QR Code Generator</h2>
   <div class="subtitle">Construction & Engineering Use</div>
 
-  <label for="link">Project / Location Link</label>
+  <label>Project / Location Link</label>
   <input id="link" placeholder="https://maps.google.com/..." />
 
-  <label for="name">File Name</label>
+  <label>File Name</label>
   <input id="name" placeholder="site-qr-01" />
 
-  <button onclick="generate()">GENERATE & DOWNLOAD</button>
+  <button onclick="generate()">Generate QR</button>
 
   <div id="preview"></div>
 
+  <div class="downloads" id="downloads">
+    <button class="secondary" onclick="downloadPNG()">Download PNG</button>
+    <button class="secondary" onclick="downloadSVG()">Download SVG</button>
+  </div>
+
   <div class="note">
-    Optimized for 3cm × 3cm print • Low-density QR
+    Tip: On mobile, long-press the QR to save image
   </div>
 </div>
 
 <script>
+let currentImg = null;
+let currentLink = "";
+let currentName = "";
+
 function generate() {
   const link = document.getElementById("link").value.trim();
   const name = document.getElementById("name").value.trim();
@@ -149,6 +155,9 @@ function generate() {
     alert("Please fill all fields");
     return;
   }
+
+  currentLink = link;
+  currentName = name;
 
   const preview = document.getElementById("preview");
   preview.innerHTML = "";
@@ -163,39 +172,38 @@ function generate() {
     correctLevel: QRCode.CorrectLevel.L
   });
 
-  // Download PNG
   setTimeout(() => {
-    const img = qrDiv.querySelector("img");
-    if (!img) return;
+    currentImg = qrDiv.querySelector("img");
+    if (!currentImg) return;
 
-    const a = document.createElement("a");
-    a.href = img.src;
-    a.download = `QR-Codes/${name}.png`;
-    a.click();
-  }, 400);
+    document.getElementById("downloads").style.display = "flex";
+  }, 300);
+}
 
-  // Download SVG
-  setTimeout(() => {
-    const img = qrDiv.querySelector("img");
-    if (!img) return;
+function downloadPNG() {
+  if (!currentImg) return;
+  const a = document.createElement("a");
+  a.href = currentImg.src;
+  a.download = currentName + ".png";
+  a.click();
+}
 
-    const svg = `
+function downloadSVG() {
+  const svg = `
 <svg xmlns="http://www.w3.org/2000/svg" width="300" height="300" viewBox="0 0 300 300">
   <rect width="100%" height="100%" fill="white"/>
-  <image href="${img.src}" width="300" height="300"/>
+  <image href="${currentImg.src}" width="300" height="300"/>
 </svg>
 `;
+  const blob = new Blob([svg], { type: "image/svg+xml" });
+  const url = URL.createObjectURL(blob);
 
-    const blob = new Blob([svg], { type: "image/svg+xml" });
-    const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = currentName + ".svg";
+  a.click();
 
-    const svgLink = document.createElement("a");
-    svgLink.href = url;
-    svgLink.download = `QR-Codes/${name}.svg`;
-    svgLink.click();
-
-    URL.revokeObjectURL(url);
-  }, 500);
+  URL.revokeObjectURL(url);
 }
 </script>
 
